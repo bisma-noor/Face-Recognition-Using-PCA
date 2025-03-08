@@ -1,0 +1,58 @@
+import numpy as np
+from PIL import Image
+from numpy import asarray
+from numpy import array
+
+# 0 is for column, directly is for Row
+#print(len(images[0]), len(images)
+images = array([[0 for i in range(1)] for j in range(10304)])
+for i in range(1, 41):
+    for j in range(1, 8):
+        path = rf"C:\Users\HP\Downloads\datasets\s{i}\{j}.pgm" #add the path of dataset
+        image = asarray(Image.open(path))
+        image = image.reshape(10304, 1)
+        images = np.concatenate((images, image), axis=1)
+images = np.delete(images, 0, axis=1)
+
+# print(len(images), len(images[0]))
+images_mean = np.mean(images, axis=1)
+# images_mean = images_mean.reshape(10304, 1)
+# print(images_mean.shape)
+
+mean_diff = []
+for i in range(280):
+    temp = images[:, i] - images_mean
+    mean_diff.append(temp)
+mean_diff = np.array(mean_diff)
+mean_diff = mean_diff.T
+# print(mean_diff.shape)
+Zcov = np.cov(mean_diff.T)
+# print(Zcov.shape)
+#
+eigenvalues, eigenvectors = np.linalg.eig(Zcov)
+# print(eigenvectors.shape)
+eigenspace = mean_diff.dot(eigenvectors)
+# print(eigenspace.shape)
+PImage = eigenspace.T.dot(mean_diff)
+# print(PImage.shape)
+
+count = 0
+for i in range(1, 41):
+    for j in range(8, 11):
+        path = rf"C:\Users\HP\Downloads\datasets\s{i}\{j}.pgm"
+        test_image = asarray(Image.open(path))
+        test_image = test_image.reshape(10304, 1)
+        test_mean_diff = test_image[:, 0] - images_mean
+        test_mean_diff = test_mean_diff.reshape(10304, 1)
+        # print(test_mean_diff.shape)
+        test_project = eigenspace.T.dot(test_mean_diff)
+        # print(test_project.shape)
+        temp = np.linalg.norm(test_project - PImage, axis=0)
+        # print(temp)
+        ind = np.argmin(temp)
+        predicted_class = ind // 7 + 1
+        #print(predicted_class)
+        if predicted_class == i:
+            count += 1
+percentage = ((count / 120) * 100)
+print("Percentage resemblance of training and test data:",percentage)
